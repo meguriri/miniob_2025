@@ -184,7 +184,7 @@ int main(int argc, char **argv)
 {
   int rc = STATUS_SUCCESS;
 
-  cout << startup_tips;
+  cout << startup_tips<<" produce by meguriri";
 
   set_signal_handler(quit_signal_handle);
 
