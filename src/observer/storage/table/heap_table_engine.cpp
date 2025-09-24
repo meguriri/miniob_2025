@@ -285,19 +285,26 @@ Index *HeapTableEngine::find_index_by_field(const char *field_name) const
   return nullptr;
 }
 
+/*
+  * 初始化表的存储引擎
+  * 1. 打开数据文件对应的buffer pool
+  * 2. 初始化record handler
+*/
 RC HeapTableEngine::init()
 {
   string data_file = table_data_file(db_->path().c_str(), table_meta_->name());
 
   BufferPoolManager &bpm = db_->buffer_pool_manager();
+
+  // 打开数据文件对应的buffer pool
   RC                 rc  = bpm.open_file(db_->log_handler(), data_file.c_str(), data_buffer_pool_);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to open disk buffer pool for file:%s. rc=%d:%s", data_file.c_str(), rc, strrc(rc));
     return rc;
   }
 
+  // 初始化record handler
   record_handler_ = new RecordFileHandler(table_meta_->storage_format());
-
   rc = record_handler_->init(*data_buffer_pool_, db_->log_handler(), table_meta_, table_->lob_handler_);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to init record handler. rc=%s", strrc(rc));
@@ -309,10 +316,16 @@ RC HeapTableEngine::init()
   return rc;
 }
 
+/*
+  * 打开表的存储引擎
+  * 1. 初始化表的存储引擎
+  * 2. 打开所有的索引文件
+*/
 RC HeapTableEngine::open()
 {
   RC rc = RC::SUCCESS;
   init();
+  // 打开所有的索引文件
   const int index_num = table_meta_->index_num();
   for (int i = 0; i < index_num; i++) {
     const IndexMeta *index_meta = table_meta_->index(i);
@@ -351,7 +364,9 @@ RC HeapTableEngine::close(){
   }
   // 清除索引
   for (Index *index : indexes_) {
+    index->destroy();
     delete index;
+    index = nullptr;
   }
   indexes_.clear();
   // 关闭buffer pool

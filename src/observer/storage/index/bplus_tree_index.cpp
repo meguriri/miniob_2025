@@ -69,6 +69,16 @@ RC BplusTreeIndex::open(Table *table, const char *file_name, const IndexMeta &in
   return RC::SUCCESS;
 }
 
+RC BplusTreeIndex::destroy(){
+  if (inited_) {
+    LOG_INFO("Begin to destroy index, index:%s, field:%s", index_meta_.name(), index_meta_.field());
+    index_handler_.destroy();
+    inited_ = false;
+  }
+  LOG_INFO("Successfully destroy index.");
+  return RC::SUCCESS;
+}
+
 RC BplusTreeIndex::close()
 {
   if (inited_) {

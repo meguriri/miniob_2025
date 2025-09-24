@@ -79,12 +79,14 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
   close(fd);
 
   // 创建文件
+  // 初始化表元数据： 表id，表名，属性，主键，存储格式，存储引擎
   const vector<FieldMeta> *trx_fields = db->trx_kit().trx_fields();
   if ((rc = table_meta_.init(table_id, name, trx_fields, attributes, primary_keys, storage_format, storage_engine)) != RC::SUCCESS) {
     LOG_ERROR("Failed to init table meta. name:%s, ret:%d", name, rc);
     return rc;  // delete table file
   }
 
+  // 创建并打开数据文件
   fstream fs;
   fs.open(path, ios_base::out | ios_base::binary);
   if (!fs.is_open()) {
@@ -96,6 +98,7 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
   table_meta_.serialize(fs);
   fs.close();
 
+  // 初始化表的其他信息
   db_       = db;
 
   string             data_file = table_data_file(base_dir, name);
@@ -115,7 +118,9 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
     LOG_WARN("Unsupported storage engine type: %d", table_meta_.storage_engine());
     return rc;
   }
+  // 执行引擎
   rc = engine_->open();
+  
   if (rc != RC::SUCCESS) {
     LOG_WARN("Failed to open table %s due to engine open failed.", data_file.c_str());
     return rc;
@@ -142,7 +147,7 @@ RC Table::drop(const char *path, const char *name, const char *base_dir){
     return rc;
   }
   // 关闭存储引擎
-  engine_->close();
+  rc = engine_->close();
 
   LOG_INFO("Successfully drop table %s:%s", path, name);
   return rc;

@@ -31,6 +31,10 @@ public:
 
     return RC::UNIMPLEMENTED;
   };
+  RC destroy()
+  {
+    return RC::UNIMPLEMENTED;
+  };
 
   vector<RID> ann_search(const vector<float> &base_vector, size_t limit) { return vector<RID>(); }
 

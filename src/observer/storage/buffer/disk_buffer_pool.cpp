@@ -311,6 +311,17 @@ RC DiskBufferPool::close_file()
   return RC::SUCCESS;
 }
 
+RC DiskBufferPool::remove_file(){
+  // TODO should check all pages are unpinned
+  RC rc = RC::SUCCESS;
+  rc = bp_manager_.remove_file(file_name_.c_str());
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("failed to remove file %s, rc=%s", file_name_.c_str(), strrc(rc));
+    return rc;
+  }
+  return RC::SUCCESS;
+}
+
 RC DiskBufferPool::get_this_page(PageNum page_num, Frame **frame)
 {
   RC rc  = RC::SUCCESS;
