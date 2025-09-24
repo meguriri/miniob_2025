@@ -341,3 +341,23 @@ RC HeapTableEngine::open()
   }
   return rc;
 }
+
+RC HeapTableEngine::close(){
+  RC rc = RC::SUCCESS;
+  // 清除record  handler
+  if (record_handler_ != nullptr) {
+    delete record_handler_;
+    record_handler_ = nullptr;
+  }
+  // 清除索引
+  for (Index *index : indexes_) {
+    delete index;
+  }
+  indexes_.clear();
+  // 关闭buffer pool
+  // if (data_buffer_pool_ != nullptr) {
+  //   data_buffer_pool_->close_file();
+  //   data_buffer_pool_ = nullptr;
+  // }
+  return rc;
+}

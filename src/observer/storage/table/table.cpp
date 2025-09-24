@@ -141,11 +141,9 @@ RC Table::drop(const char *path, const char *name, const char *base_dir){
     LOG_ERROR("Failed to create disk buffer pool of data file. file name=%s", data_file.c_str());
     return rc;
   }
+  // 关闭存储引擎
+  engine_->close();
 
-  // TODO 删除record handler
-
-  // TODO 删除索引文件
-  
   LOG_INFO("Successfully drop table %s:%s", path, name);
   return rc;
 }
