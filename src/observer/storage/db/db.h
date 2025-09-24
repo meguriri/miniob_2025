@@ -65,10 +65,17 @@ public:
    * @brief 创建一个表
    * @param table_name 表名
    * @param attributes 表的属性
+   * @param primary_keys 表的主键
    * @param storage_format 表的存储格式
    */
   RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes, const vector<string> &primary_keys,
       const StorageFormat storage_format = StorageFormat::ROW_FORMAT);
+
+  /**
+   * @brief 删除一个表
+   * @param table_name 表名
+   */
+  RC drop_table(const char *table_name);
 
   /**
    * @brief 根据表名查找表

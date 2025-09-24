@@ -63,6 +63,12 @@ public:
       StorageEngine storage_engine);
 
   /**
+   * 删除一个表
+   * @param path 元数据保存的文件(完整路径)
+   */
+  RC drop(const char *path, const char *name, const char *base_dir);
+
+  /**
    * 打开一个表
    * @param meta_file 保存表元数据的文件完整路径
    * @param base_dir 表所在的文件夹，表记录数据文件、索引数据文件存放位置

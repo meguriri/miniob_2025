@@ -122,9 +122,34 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
   }
 
   LOG_INFO("Successfully create table %s:%s", base_dir, name);
-  return rc;
+  return RC::SUCCESS;
 }
 
+
+RC Table::drop(const char *path, const char *name, const char *base_dir){
+  RC rc = RC::SUCCESS;
+  // 删除元数据文件
+  if (::remove(path) != 0) {
+    LOG_ERROR("Failed to remove table meta file. filename=%s, errmsg=%s", path, strerror(errno));
+    return RC::INTERNAL;
+  }
+  // 删除表数据文件
+  string             data_file = table_data_file(base_dir, name);
+  BufferPoolManager &bpm       = db_->buffer_pool_manager(); 
+  rc                           = bpm.remove_file(data_file.c_str());
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Failed to create disk buffer pool of data file. file name=%s", data_file.c_str());
+    return rc;
+  }
+
+  // TODO 删除record handler
+
+  // TODO 删除索引文件
+  
+  LOG_INFO("Successfully drop table %s:%s", path, name);
+  return rc;
+}
+ 
 RC Table::open(Db *db, const char *meta_file, const char *base_dir)
 {
   // 加载元数据文件
