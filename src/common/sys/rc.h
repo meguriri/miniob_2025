@@ -82,6 +82,7 @@ See the Mulan PSL v2 for more details. */
   DEFINE_RC(WAL_INVALID_FILENAME)        \
   DEFINE_RC(INPUT_EOF)                   \
   DEFINE_RC(INVALID_TOKEN)               \
+  DEFINE_RC(INVALID_DATE_FORMAT)               \
   DEFINE_RC(UNEXPECTED_END_OF_STRING)    \
   DEFINE_RC(SYNTAX_ERROR)                \
   DEFINE_RC(UNSUPPORTED)

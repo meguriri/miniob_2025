@@ -191,6 +191,14 @@ void Value::set_empty_string(int len)
   
 }
 
+void Value::set_date(int year,int month,int day)
+{
+  reset();
+  attr_type_ = AttrType::DATES;
+  value_.date_value_ = year * 10000 + month * 100 + day;
+  length_            = sizeof(int32_t);
+}
+
 void Value::set_value(const Value &value)
 {
   switch (value.attr_type_) {
@@ -205,6 +213,13 @@ void Value::set_value(const Value &value)
     } break;
     case AttrType::BOOLEANS: {
       set_boolean(value.get_boolean());
+    } break;
+    case AttrType::DATES: {
+      int date = value.get_date();
+      int year = date / 10000;
+      int month = (date % 10000) / 100;
+      int day = date % 100;
+      set_date(year, month, day);
     } break;
     default: {
       ASSERT(false, "got an invalid value type");
@@ -273,6 +288,33 @@ int Value::get_int() const
     }
   }
   return 0;
+}
+
+int Value::get_date() const
+{
+  switch (attr_type_) {
+    case AttrType::DATES: {
+      return value_.date_value_;
+    }
+    case AttrType::CHARS: {
+      const char* str = value_.pointer_value_;
+      int y=0,m=0,d=0;
+      int arg = sscanf(str, "%d-%d-%d", &y, &m, &d);
+      if (arg != 3 || !DateType().is_valid_date(y, m, d)) {
+        LOG_WARN("failed to convert string to date. s=%s", str);
+        return -1;
+      } else {
+        return y * 10000 + m * 100 + d; 
+      }
+    }
+    case AttrType::INTS: {
+      return value_.int_value_;
+    }
+    default: {
+      LOG_WARN("unknown data type. type=%d", attr_type_);
+      return -1;
+    }
+  }
 }
 
 float Value::get_float() const
