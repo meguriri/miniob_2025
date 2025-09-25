@@ -33,7 +33,7 @@ public:
 
   virtual ~DataType() = default;
 
-  inline static DataType *type_instance(AttrType attr_type)
+  inline static DataType* type_instance(AttrType attr_type)
   {
     return type_instances_.at(static_cast<int>(attr_type)).get();
   }
