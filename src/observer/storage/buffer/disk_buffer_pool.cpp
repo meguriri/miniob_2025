@@ -849,16 +849,17 @@ RC BufferPoolManager::create_file(const char *file_name)
   return RC::SUCCESS;
 }
 
-RC BufferPoolManager::remove_file(const char *file_name){
+RC BufferPoolManager::remove_file(const char *_file_name){
   RC rc = RC::SUCCESS;
+  string file_name(_file_name);
   // 在内存上清理数据
-  rc = close_file(file_name);
+  rc = close_file(file_name.c_str());
   if (rc != RC::SUCCESS) {
-    LOG_ERROR("Failed to close file before remove it. filename=%s, rc=%s", file_name, strrc(rc));
+    LOG_ERROR("Failed to close file before remove it. filename=%s, rc=%s", file_name.c_str(), strrc(rc));
     return rc;
   }
   // 删除磁盘上的文件
-  if (::remove(file_name) != 0) {
+  if (::remove(file_name.c_str()) != 0) {
     LOG_ERROR("Failed to remove table data file. filename=%s, errmsg=%s", file_name, strerror(errno));
     return RC::INTERNAL;
   }
