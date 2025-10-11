@@ -860,7 +860,7 @@ RC BufferPoolManager::remove_file(const char *_file_name){
   }
   // 删除磁盘上的文件
   if (::remove(file_name.c_str()) != 0) {
-    LOG_ERROR("Failed to remove table data file. filename=%s, errmsg=%s", file_name, strerror(errno));
+    LOG_ERROR("Failed to remove table data file. filename=%s, errmsg=%s", file_name.c_str(), strerror(errno));
     return RC::INTERNAL;
   }
   return RC::SUCCESS;
