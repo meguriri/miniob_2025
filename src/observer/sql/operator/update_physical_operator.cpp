@@ -71,27 +71,40 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     // 4. 获取新记录的可写数据区指针
     char *new_data = new_record.data();
     
-    // 如果字段类型和值的类型不匹配，需要进行类型转换
+     // 确定要复制的字节数
+    size_t copy_len = 0;
+    const Value *value_to_copy = value_; // 默认使用原始值
+    // 如果需要类型转换
+    Value casted_value; // 提前声明以扩大作用域
     if (field->type() != value_->attr_type()) {
-        Value casted_value;
-        // 正确的类型转换调用方式
         rc = DataType::type_instance(value_->attr_type())->cast_to(*value_, field->type(), casted_value);
         if (rc != RC::SUCCESS) {
             LOG_WARN("Failed to cast value during update. rc=%s", strrc(rc));
-            // 类型转换失败，可以返回一个空记录或未修改的记录
             return rc; 
         }
-        // 使用转换后的值来更新记录
-        memcpy(new_data + field->offset(), casted_value.data(), field->len());
+        value_to_copy = &casted_value; // 后续使用转换后的值
+    }
+
+    // 根据值的类型和字段定义，计算正确的复制长度
+    if (field->type() == AttrType::CHARS) {
+        // 对于 CHARS 类型，复制新值的实际长度（包括 '\0'），但不能超过字段定义的最大长度
+        copy_len = value_to_copy->length() + 1; // +1 for '\0'
+        if (copy_len > field->len()) {
+            copy_len = field->len(); // 截断
+        }
     } else {
-        // 类型匹配，直接使用原始值更新
-        memcpy(new_data + field->offset(), value_->data(), field->len());
+        // 对于非字符串类型（如 INT, FLOAT），直接使用字段定义的长度
+        copy_len = field->len();
+    }
+
+    // 使用计算出的正确长度执行 memcpy
+    memcpy(new_data + field->offset(), value_to_copy->data(), copy_len);
+
+    // 如果是定长字符串，且新值比字段短，需要用空格或'\0'填充剩余部分
+    if (field->type() == AttrType::CHARS && copy_len < field->len()) {
+        memset(new_data + field->offset() + copy_len, 0, field->len() - copy_len);
     }
     rc = trx_->update_record(table_, old_record, new_record);
-    if (rc != RC::SUCCESS) {
-      LOG_WARN("failed to update record: %s", strrc(rc));
-      return rc;
-    }
   }
   return RC::SUCCESS;
 }
