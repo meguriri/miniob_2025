@@ -118,6 +118,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         LE
         GE
         NE
+        LIKE_TOKEN
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -680,7 +681,7 @@ condition:
       $$->left_is_attr = 0;
       $$->left_value = *$1;
       $$->right_is_attr = 1;
-      $$->right_attr = *$3;
+      $$->right_attr = *$3; 
       $$->comp = $2;
 
       delete $1;
@@ -695,6 +696,7 @@ comp_op:
     | LE { $$ = LESS_EQUAL; }
     | GE { $$ = GREAT_EQUAL; }
     | NE { $$ = NOT_EQUAL; }
+    | LIKE_TOKEN { $$ = LIKE_TO; }
     ;
 
 // your code here

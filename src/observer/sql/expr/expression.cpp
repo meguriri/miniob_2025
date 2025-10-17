@@ -16,6 +16,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/tuple.h"
 #include "sql/expr/arithmetic_operator.hpp"
 
+#include <regex>
+
 using namespace std;
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value) const
@@ -139,6 +141,61 @@ ComparisonExpr::ComparisonExpr(CompOp comp, unique_ptr<Expression> left, unique_
 
 ComparisonExpr::~ComparisonExpr() {}
 
+
+bool ComparisonExpr::like_handle(const Value &left, const Value &right) const
+{
+  if (left.attr_type() != AttrType::CHARS || right.attr_type() != AttrType::CHARS) {
+    LOG_WARN("LIKE operator can only be applied to string types.");
+    return false;
+  }
+  const char* str = left.data();
+  const char* sql_pattern = right.data();
+
+  if (str == nullptr || sql_pattern == nullptr) {
+    return false; // 或者根据 SQL 标准处理 NULL 的情况
+  }
+
+  string regex_pattern_str;
+  regex_pattern_str.reserve(strlen(sql_pattern) * 2);
+
+  for (const char* p = sql_pattern; *p; ++p) {
+    switch (*p) {
+      case '%':
+        regex_pattern_str += ".*";
+        break;
+      case '_':
+        regex_pattern_str += ".";
+        break;
+      case '\\':
+      case '^':
+      case '$':
+      case '.':
+      case '|':
+      case '?':
+      case '*':
+      case '+':
+      case '(':
+      case ')':
+      case '[':
+      case '{':
+        regex_pattern_str += '\\';
+        regex_pattern_str += *p;
+        break;
+      default:
+        regex_pattern_str += *p;
+        break;
+    }
+  }
+  LOG_DEBUG("regex_pattern_str: %s",regex_pattern_str.c_str());
+  try {
+    std::regex regex_pattern(regex_pattern_str);
+    return std::regex_match(str, regex_pattern);
+  } catch (const std::regex_error& e) {
+    LOG_WARN("Invalid LIKE pattern created regex error: %s", e.what());
+    return false;
+  }
+}
+
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
   RC  rc         = RC::SUCCESS;
@@ -162,6 +219,9 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
     } break;
     case GREAT_THAN: {
       result = (cmp_result > 0);
+    } break;
+    case LIKE_TO: {
+      result = like_handle(left,right);
     } break;
     default: {
       LOG_WARN("unsupported comparison. %d", comp_);

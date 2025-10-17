@@ -302,6 +302,8 @@ public:
   AttrType value_type() const override { return AttrType::BOOLEANS; }
   CompOp   comp() const { return comp_; }
 
+  bool like_handle(const Value &left, const Value &right) const;
+
   unique_ptr<Expression> copy() const override
   {
     return make_unique<ComparisonExpr>(comp_, left_->copy(), right_->copy());
