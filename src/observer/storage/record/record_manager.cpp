@@ -565,6 +565,23 @@ RC RecordFileHandler::init_free_pages()
   return rc;
 }
 
+RC RecordFileHandler::update_record(const RID *rid,const char *data,int record_size)
+{
+  RC rc = RC::SUCCESS;
+  rc = delete_record(rid);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to delete old record: %s", rid->to_string().c_str(), rc, strrc(rc));
+    return rc;
+  }
+  RID *new_rid = new RID(rid->page_num,rid->slot_num);
+  rc = insert_record(data,record_size,new_rid);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to insert new record: %s", rid->to_string().c_str(), rc, strrc(rc));
+    return rc;
+  }
+  return rc;
+}
+
 RC RecordFileHandler::insert_record(const char *data, int record_size, RID *rid)
 {
   RC ret = RC::SUCCESS;

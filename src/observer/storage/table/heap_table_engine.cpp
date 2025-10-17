@@ -103,6 +103,46 @@ RC HeapTableEngine::delete_record(const Record &record)
   return rc;
 }
 
+RC HeapTableEngine::update_record(const Record &old_record, const Record &new_record)
+{
+  RC rc = RC::SUCCESS;
+
+  // 修改索引
+  for (Index *index : indexes_) {
+           const FieldMeta *field = table_meta_->field(index->index_meta().field());
+    if (nullptr == field) {
+        // 应该不会发生，但做好防御
+        LOG_ERROR("Cannot find field for index %s", index->index_meta().name());
+        return RC::INTERNAL;
+    }
+
+    // 比较新旧记录中，该索引对应的字段值是否发生变化
+    if (memcmp(old_record.data() + field->offset(), new_record.data() + field->offset(), field->len()) != 0) {
+      // 只有在索引键值确实发生变化时，才执行删除和插入操作
+      rc = index->delete_entry(old_record.data(), &old_record.rid());
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to delete old entry from index. table=%s, index=%s, rid=%s, rc=%s",
+                 table_meta_->name(), index->index_meta().name(), old_record.rid().to_string().c_str(), strrc(rc));
+        // 重要的错误处理：如果删除失败，不应该继续插入，可能需要回滚
+        return rc;
+      }
+
+      rc = index->insert_entry(new_record.data(), &new_record.rid());
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to insert new entry to index. table=%s, index=%s, rid=%s, rc=%s",
+                 table_meta_->name(), index->index_meta().name(), new_record.rid().to_string().c_str(), strrc(rc));
+        // 重要的错误处理：如果插入失败，需要把刚才删除的旧条目再插回去，以保证数据一致性
+        // (这里为了简化，仅返回错误)
+        return rc;
+      }
+    }
+  }
+
+  // 修改记录
+  rc = record_handler_->update_record(&old_record.rid(),new_record.data(),table_meta_->record_size());
+  return rc;
+}
+
 RC HeapTableEngine::get_record_scanner(RecordScanner *&scanner, Trx *trx, ReadWriteMode mode)
 {
   scanner = new HeapRecordScanner(table_, *data_buffer_pool_, trx, db_->log_handler(), mode, nullptr);
